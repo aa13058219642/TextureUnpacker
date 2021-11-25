@@ -48,12 +48,12 @@ namespace TextureUnpacker
         public List<AtlasRegion> region = new List<AtlasRegion>();
     }
 
-    class AtlasLoad
+    class Atlas
     {
         public List<AtlasFile> List_atlasFile = new List<AtlasFile>();
 
-		public AtlasLoad() { }
-		public AtlasLoad(String filepath) { load(filepath); }
+		public Atlas() { }
+		public Atlas(String filepath) { load(filepath); }
 
 
         public void load(String path)
@@ -70,13 +70,12 @@ namespace TextureUnpacker
 
             while ((str = file.ReadLine()) != null)
             {
-                //空行为新的开始
-                if(str == "")
+                // empty line mean new Region
+                if (str == "")
                 {
 					continue;
-                    //break;
                 }
-                //第一行是名字
+                // first line is Name
                 else if (lineindex == 0)
                 {
                     if (atlasFile != null)
@@ -89,7 +88,7 @@ namespace TextureUnpacker
                     atlasFile = new AtlasFile();
                     atlasFile.page.name = str;
                 }
-                //后4行是Atlas头
+                // next 4 lines is AtlasFils's Head
                 else if (lineindex < 5)
                 {
                     p_name = getPropertiesName(str);
@@ -180,7 +179,70 @@ namespace TextureUnpacker
                 List_atlasFile.Add(atlasFile);
             }
 
-            file.Close();//关闭文件读取流
+            file.Close();
+        }
+
+        public bool export(String texture_path, String export_path, bool clip_sprite = false)
+        {
+            Bitmap bmp;
+            Image img = Image.FromFile(texture_path);
+
+            if (!clip_sprite)
+            {
+                foreach (AtlasRegion region in List_atlasFile[0].region)
+                {
+                    bmp = new Bitmap(region.orig.Width, region.orig.Height);
+                    Graphics g = Graphics.FromImage(bmp);
+
+                    // Pen pen = new Pen(Color.Red, 1);
+                    // g.DrawRectangle(pen, new Rectangle(region.offset, region.size));
+
+                    if (!region.rotate)
+                    {
+                        g.DrawImage(img,
+                            new Rectangle(region.offset, region.size),
+                            new Rectangle(region.xy, region.size),
+                            GraphicsUnit.Pixel);
+                    }
+                    else
+                    {
+                        g.TranslateTransform(region.offset.X + region.size.Width, region.offset.Y);
+                        g.RotateTransform(90.0F);
+                        g.DrawImage(img,
+                            new Rectangle(0, 0, region.size.Height, region.size.Width),
+                            new Rectangle(region.xy, new Size(region.size.Height, region.size.Width)),
+                            GraphicsUnit.Pixel);
+                    }
+                    bmp.Save(export_path + "\\" + region.name + ".png");
+                }
+            }
+            else
+            {
+                foreach (AtlasRegion region in List_atlasFile[0].region)
+                {
+                    bmp = new Bitmap(region.size.Width, region.size.Height);
+                    Graphics g = Graphics.FromImage(bmp);
+
+                    if (!region.rotate)
+                    {
+                         g.DrawImage(img,
+                             new Rectangle(0, 0, region.size.Width, region.size.Height),
+                             new Rectangle(region.xy, region.size),
+                             GraphicsUnit.Pixel);
+                    }
+                    else
+                    {
+                        g.TranslateTransform(region.size.Width, 0);
+                        g.RotateTransform(90.0F);
+                        g.DrawImage(img,
+                            new Rectangle(0, 0, region.size.Height, region.size.Width),
+                            new Rectangle(region.xy, new Size(region.size.Height, region.size.Width)),
+                            GraphicsUnit.Pixel);
+                    }
+                    bmp.Save(export_path + "\\" + region.name + ".png");
+                }
+            }
+            return true;
         }
 
         private String getPropertiesName(String str)

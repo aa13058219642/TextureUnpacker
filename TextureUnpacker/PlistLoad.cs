@@ -71,6 +71,88 @@ namespace TextureUnpacker
 			file.Close();
 		}
 
+		public bool export(String texture_path, String export_path, bool clip_sprite = false)
+		{
+			Bitmap bmp, sprite;
+			Image img = Image.FromFile(texture_path);
+
+			if (!clip_sprite)
+			{
+				foreach (PlistFrame frame in plistFile.frames)
+				{
+                    if (!frame.rotated)
+                    {
+                        bmp = new Bitmap(frame.sourceSize.Width, frame.sourceSize.Height);
+                        Graphics g = Graphics.FromImage(bmp);
+
+                        g.DrawImage(
+							img,
+                            new Rectangle(
+                                (frame.sourceSize.Width - frame.frame.Width) / 2 + frame.offset.X,
+                                (frame.sourceSize.Height - frame.frame.Height) / 2 - frame.offset.Y,
+                                frame.frame.Width,
+                                frame.frame.Height),
+                            frame.frame,
+                            GraphicsUnit.Pixel);
+                    }
+                    else
+                    {
+                        bmp = new Bitmap(frame.sourceSize.Height, frame.sourceSize.Width);
+                        Graphics g = Graphics.FromImage(bmp);
+
+                        g.DrawImage(
+							img,
+                            new Rectangle(
+                                (frame.sourceSize.Height - frame.frame.Height) / 2 + frame.offset.Y,
+                                (frame.sourceSize.Width - frame.frame.Width) / 2 + frame.offset.X,
+                                frame.frame.Height,
+                                frame.frame.Width),
+                            new Rectangle(
+                                frame.frame.Left,
+                                frame.frame.Top,
+                                frame.frame.Height,
+                                frame.frame.Width
+                                ),
+                            GraphicsUnit.Pixel);
+                        bmp.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                    }
+
+                    bmp.Save(export_path + "\\" + frame.name);
+				}
+			}
+			else
+			{
+				foreach (PlistFrame frame in plistFile.frames)
+				{
+					if (!frame.rotated)
+					{
+						bmp = new Bitmap(frame.frame.Width, frame.frame.Height);
+						Graphics g = Graphics.FromImage(bmp);
+						g.DrawImage(
+							img,
+							new Rectangle(0, 0, frame.frame.Width, frame.frame.Height),
+							frame.frame,
+							GraphicsUnit.Pixel);
+					}
+					else
+					{
+						bmp = new Bitmap(frame.frame.Height, frame.frame.Width);
+						Graphics g = Graphics.FromImage(bmp);
+
+						g.DrawImage(
+							img,
+							new Rectangle(0, 0, frame.frame.Height, frame.frame.Width),
+							new Rectangle(frame.frame.Left, frame.frame.Top, frame.frame.Height, frame.frame.Width),
+							GraphicsUnit.Pixel);
+						bmp.RotateFlip(RotateFlipType.Rotate270FlipNone);
+					}
+
+					bmp.Save(export_path + "\\" + frame.name);
+				}
+			}
+			return true;
+		}
+
 		private Dictionary<string, XmlNode> tree_to_dict(XmlNode root)
 		{
 			Dictionary<string, XmlNode> d = new Dictionary<string, XmlNode>();
